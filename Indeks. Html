@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kamera Blur Background (Web)</title>
+  <style>
+    body { text-align:center; background:#111; color:white; font-family:sans-serif; }
+    video, canvas { width:100%; max-width:400px; border-radius:10px; }
+    button { margin:5px; padding:10px 15px; border:none; border-radius:6px; font-size:16px; }
+    #start { background:#28a745; color:white; }
+    #record { background:#007bff; color:white; }
+    #stop { background:#dc3545; color:white; }
+    #download { background:#ffc107; color:black; display:none; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js"></script>
+</head>
+<body>
+  <h2>🎥 Kamera Blur Background</h2>
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="canvas"></canvas><br>
+  
+  <button id="start">Mulai Kamera</button>
+  <button id="record" disabled>🎬 Rekam</button>
+  <button id="stop" disabled>⏹️ Stop</button>
+  <a id="download" download="video_blur.webm">⬇️ Download</a>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    let recorder, recordedChunks = [];
+
+    // Setup MediaPipe
+    const selfieSegmentation = new SelfieSegmentation.SelfieSegmentation({locateFile: (file) => 
+      `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`});
+    selfieSegmentation.setOptions({ modelSelection: 1 });
+    selfieSegmentation.onResults(onResults);
+
+    async function startCam() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        video.play();
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        renderFrame();
+      };
+      document.getElementById("record").disabled = false;
+    }
+
+    async function renderFrame() {
+      await selfieSegmentation.send({image: video});
+      requestAnimationFrame(renderFrame);
+    }
+
+    function onResults(results) {
+      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.filter = "blur(15px)";
+      ctx.drawImage(results.segmentationMask, 0, 0, canvas.width, canvas.height);
+      ctx.filter = "none";
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    // Rekam video
+    document.getElementById("record").onclick = () => {
+      recordedChunks = [];
+      let stream = canvas.captureStream(30);
+      recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      recorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      recorder.onstop = () => {
+        let blob = new Blob(recordedChunks, { type: 'video/webm' });
+        let url = URL.createObjectURL(blob);
+        let dl = document.getElementById("download");
+        dl.href = url; dl.style.display = "inline-block";
+      };
+      recorder.start();
+      document.getElementById("record").disabled = true;
+      document.getElementById("stop").disabled = false;
+    };
+
+    document.getElementById("stop").onclick = () => {
+      recorder.stop();
+      document.getElementById("record").disabled = false;
+      document.getElementById("stop").disabled = true;
+    };
+
+    document.getElementById("start").onclick = startCam;
+  </script>
+</body>
+</html>
