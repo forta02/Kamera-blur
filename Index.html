@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Seberuang — Hub Official</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #f8fafc; scroll-behavior: smooth; }
+        .glass-blur { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .bento-card { background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 32px; transition: all 0.5s ease; overflow: hidden; cursor: pointer; }
+        .bento-card:hover { border-color: #3b82f6; transform: translateY(-8px); background: rgba(30, 41, 59, 0.6); box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.3); }
+        .comment-scroll::-webkit-scrollbar { width: 4px; }
+        .comment-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); transition: all 0.3s ease; }
+        .tag-badge { background: rgba(59, 130, 246, 0.1); color: #60a5fa; padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        iframe { border-radius: 16px; width: 100%; aspect-ratio: 16/9; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="pb-20">
+
+    <header class="fixed top-0 w-full z-[100] px-6 py-4 glass-blur">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="font-extrabold text-lg tracking-tighter uppercase text-blue-400">Media Seberuang</h1>
+            <nav class="flex items-center bg-black/40 rounded-2xl p-1 border border-white/5">
+                <button onclick="switchTab('Foto')" id="tab-foto" class="px-6 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white">PHOTOS</button>
+                <button onclick="switchTab('Video')" id="tab-video" class="px-6 py-2 rounded-xl text-xs font-bold text-slate-400">VIDEOS</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 pt-40">
+        <div class="mb-12 max-w-2xl mx-auto">
+            <input type="text" id="searchInput" oninput="render()" placeholder="Cari judul kegiatan..." 
+                   class="w-full bg-slate-900/50 border border-white/10 rounded-2xl py-4 px-6 text-white outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-center">
+            <p class="col-span-full py-20 text-slate-500 animate-pulse uppercase tracking-widest font-bold">Sinkronisasi Cloud...</p>
+        </div>
+    </main>
+
+    <button onclick="toggleModal('adminModal')" class="fixed bottom-8 right-8 w-14 h-14 bg-slate-900 border border-white/10 rounded-full flex items-center justify-center shadow-2xl z-[150] hover:bg-blue-600 transition-all active:scale-90">
+        <span class="text-2xl">⚙️</span>
+    </button>
+
+    <div id="mediaModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4 glass-blur">
+        <div class="bg-slate-950 w-full max-w-6xl rounded-[40px] overflow-hidden flex flex-col lg:flex-row h-full lg:h-[80vh] border border-white/10">
+            <div id="modalMedia" class="lg:w-2/3 bg-black flex items-center justify-center relative"></div>
+            <div class="lg:w-1/3 flex flex-col p-8 bg-slate-900/50">
+                <div id="modalInfo" class="mb-6"></div>
+                <div id="commentBox" class="flex-1 overflow-y-auto comment-scroll space-y-4 pr-2 text-sm mb-4"></div>
+                <div class="space-y-3">
+                    <input type="text" id="c-nama" placeholder="Nama Anda" class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white outline-none">
+                    <textarea id="c-teks" placeholder="Tulis komentar..." class="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm text-white h-20 outline-none resize-none"></textarea>
+                    <button onclick="pushComment()" class="w-full btn-primary py-3 rounded-xl font-bold text-xs uppercase tracking-widest">Kirim</button>
+                    <button onclick="toggleModal('mediaModal')" class="w-full text-slate-500 text-[10px] font-bold uppercase py-2">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminModal" class="fixed inset-0 z-[300] hidden items-center justify-center p-4 glass-blur">
+        <div class="bg-slate-950 w-full max-w-md rounded-[40px] border border-white/10 p-10 shadow-2xl">
+            <h3 class="text-2xl font-black mb-6 text-blue-400 uppercase tracking-tighter">Media Generator</h3>
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="gen-id" placeholder="ID (cth: 01)" class="bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white outline-none">
+                    <select id="gen-tipe" class="bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white outline-none">
+                        <option value="Foto">Foto</option>
+                        <option value="Video">Video</option>
+                    </select>
+                </div>
+                <input type="text" id="gen-judul" placeholder="Judul" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white outline-none">
+                <input type="text" id="gen-link" placeholder="Link (URL)" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white outline-none">
+                <input type="text" id="gen-tags" placeholder="Tags" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white outline-none">
+                <button onclick="uploadMedia()" id="btnUp" class="w-full btn-primary py-4 rounded-xl font-bold text-xs uppercase tracking-widest">Upload</button>
+                <button onclick="toggleModal('adminModal')" class="w-full text-slate-600 text-[10px] font-bold uppercase mt-2">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_MEDIA = 'https://sheetdb.io/api/v1/siehxkmnggogj';
+        const API_KOMENTAR = 'https://sheetdb.io/api/v1/ht99mpovt78zz';
+        let mediaData = [];
+        let currentTab = 'Foto';
+        let currentOpenId = null;
+
+        // LOAD DATA
+        async function loadData() {
+            try {
+                const res = await fetch(API_MEDIA);
+                mediaData = await res.json();
+                render();
+            } catch (e) { document.getElementById('grid-container').innerHTML = "Gagal Memuat Data."; }
+        }
+
+        function render() {
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            const grid = document.getElementById('grid-container');
+            const filtered = mediaData.filter(m => (m.Tipe || m.tipe) === currentTab && (m.Judul || m.judul).toLowerCase().includes(q));
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = `<p class="col-span-full py-20 opacity-30 font-bold uppercase tracking-widest">Kosong</p>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(m => {
+                const id = m.ID || m.id;
+                const tipe = m.Tipe || m.tipe;
+                const link = m.Link || m.link;
+                const judul = m.Judul || m.judul;
+                const tags = m.Tags || m.tags || "";
+                
+                let thumb = link;
+                if(tipe === 'Video') {
+                    const vidId = link.includes('v=') ? link.split('v=')[1].split('&')[0] : link.split('/').pop();
+                    thumb = `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg`;
+                }
+
+                return `
+                <div class="bento-card p-4 group" onclick="openMedia('${id}')">
+                    <div class="aspect-[4/5] rounded-[24px] overflow-hidden mb-4 relative">
+                        <img src="${thumb}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent opacity-80"></div>
+                        <div class="absolute bottom-4 left-4 text-left">
+                            <div class="flex gap-1 mb-1">${tags.split(',').map(t => `<span class="tag-badge">${t}</span>`).join('')}</div>
+                            <h4 class="font-black text-lg leading-tight uppercase tracking-tighter">${judul}</h4>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // MODAL & COMMENT
+        function toggleModal(id) {
+            const m = document.getElementById(id);
+            m.classList.contains('hidden') ? (m.classList.remove('hidden'), m.classList.add('flex')) : (m.classList.add('hidden'), m.classList.remove('flex'));
+        }
+
+        async function openMedia(id) {
+            currentOpenId = id;
+            const item = mediaData.find(m => (m.ID || m.id) === id);
+            const view = document.getElementById('modalMedia');
+            const info = document.getElementById('modalInfo');
+            
+            const link = item.Link || item.link;
+            const tipe = item.Tipe || item.tipe;
+            
+            view.innerHTML = tipe === 'Video' ? `<iframe src="https://www.youtube.com/embed/${link.split('v=')[1]}" allowfullscreen></iframe>` : `<img src="${link}" class="max-w-full max-h-full object-contain">`;
+            info.innerHTML = `<h3 class="text-2xl font-black uppercase tracking-tighter">${item.Judul || item.judul}</h3>`;
+            
+            toggleModal('mediaModal');
+            loadComments(id);
+        }
+
+        async function loadComments(id) {
+            const box = document.getElementById('commentBox');
+            box.innerHTML = "Memuat komentar...";
+            try {
+                const res = await fetch(API_KOMENTAR);
+                const data = await res.json();
+                const filtered = data.filter(c => c.MediaID === id);
+                box.innerHTML = filtered.map(c => `
+                    <div class="bg-white/5 p-4 rounded-2xl border border-white/5">
+                        <div class="flex justify-between mb-1"><span class="font-bold text-blue-400 text-xs">${c.Nama}</span><span class="text-[9px] opacity-30">${c.Waktu}</span></div>
+                        <p class="text-slate-300 text-sm">${c.Komentar}</p>
+                    </div>
+                `).join('') || "Belum ada komentar.";
+            } catch (e) { box.innerHTML = "Gagal."; }
+        }
+
+        async function pushComment() {
+            const nama = document.getElementById('c-nama').value || "Anonim";
+            const teks = document.getElementById('c-teks').value;
+            if(!teks) return;
+            await fetch(API_KOMENTAR, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ data: [{ MediaID: currentOpenId, Nama: nama, Komentar: teks, Waktu: new Date().toLocaleDateString() }]})
+            });
+            document.getElementById('c-teks').value = '';
+            loadComments(currentOpenId);
+        }
+
+        // ADMIN UPLOAD
+        async function uploadMedia() {
+            const btn = document.getElementById('btnUp');
+            const d = { ID: document.getElementById('gen-id').value, Tipe: document.getElementById('gen-tipe').value, Judul: document.getElementById('gen-judul').value, Link: document.getElementById('gen-link').value, Tags: document.getElementById('gen-tags').value };
+            if(!d.ID || !d.Judul) return alert("Isi ID dan Judul!");
+            btn.innerText = "Mengirim...";
+            await fetch(API_MEDIA, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ data: [d] }) });
+            alert("Berhasil!"); toggleModal('adminModal'); loadData();
+            btn.innerText = "Upload";
+        }
+
+        function switchTab(t) {
+            currentTab = t;
+            document.getElementById('tab-foto').className = t === 'Foto' ? 'px-6 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white' : 'px-6 py-2 rounded-xl text-xs font-bold text-slate-400';
+            document.getElementById('tab-video').className = t === 'Video' ? 'px-6 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white' : 'px-6 py-2 rounded-xl text-xs font-bold text-slate-400';
+            render();
+        }
+
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>
